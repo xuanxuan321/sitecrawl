@@ -75,6 +75,17 @@ def _url_allows(url: str, scheme: str, netloc: str, base_path: str) -> bool:
     return candidate_path.startswith(base + "/")
 
 
+def _strip_fragment(url: str) -> str:
+    """Remove the #fragment from a URL without changing anything else."""
+    try:
+        p = urlparse(url)
+        if not getattr(p, "fragment", None):
+            return url
+        return urlunparse(p._replace(fragment=""))
+    except Exception:
+        return url
+
+
 def _collect_links_from_result(result) -> Iterable[str]:
     """Best-effort extraction of outgoing links from a crawl4ai result."""
     candidates = []
@@ -127,7 +138,7 @@ def _collect_links_from_result(result) -> Iterable[str]:
 async def discover_route_urls(target: str) -> tuple[list[str], str]:
     """Run a BFS limited to base_path; never enqueue out-of-scope links."""
     scheme, netloc, base_path = _normalize_target(target)
-    start_url = f"{scheme}://{netloc}{base_path}"
+    start_url = _strip_fragment(f"{scheme}://{netloc}{base_path}")
 
     config = CrawlerRunConfig(only_text=False)
 
@@ -140,6 +151,8 @@ async def discover_route_urls(target: str) -> tuple[list[str], str]:
     async with AsyncWebCrawler() as crawler:
         while q:
             url, depth = q.popleft()
+            # Always operate on fragment-less URLs
+            url = _strip_fragment(url)
             if url in visited:
                 continue
             visited.add(url)
@@ -174,7 +187,7 @@ async def discover_route_urls(target: str) -> tuple[list[str], str]:
 
             # Extract and enqueue only allowed links
             for href in _collect_links_from_result(result):
-                abs_url = urljoin(url, href)
+                abs_url = _strip_fragment(urljoin(url, href))
                 if _url_allows(abs_url, scheme, netloc, base_path) and abs_url not in visited:
                     q.append((abs_url, depth + 1))
 

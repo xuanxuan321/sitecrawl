@@ -3,7 +3,7 @@ import asyncio, time, xml.etree.ElementTree as ET
 from crawl4ai import AsyncUrlSeeder, SeedingConfig, AsyncWebCrawler, CrawlerRunConfig
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 
-DOMAIN = "ant-design.antgroup.com"   # 只写域名，如 react.dev
+DOMAIN = "docs.crawl4ai.com"   # 只写域名，如 react.dev
 
 async def discover_urls(domain: str) -> list[str]:
     # 1) 先用 URL 播种从 sitemap 获取（支持 sitemap 索引）
